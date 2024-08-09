@@ -5,6 +5,8 @@
  */
 
 import definePlugin from "@utils/types";
+import { Connection } from "./connection-types";
+import { connect } from "http2";
 
 export default definePlugin({
     name: "AllConnectionsEnabled",
@@ -16,19 +18,22 @@ export default definePlugin({
         }
     ],
     patches: [
-        /*{OLD
-            find: "getPlatformUserUrl:",
-            replacement: {
-                match: /(?<=(?:},{|\[{)type:\i\.ABu\..*?,name:")(.*?)"(.*?icon:{.*?},.*?enabled:)(?:!(\d))(?=,?)/g,
-                replace: "$1 notenabled$3\".replace(\" notenabled0\",\"\").replace(\"notenabled1\",\"(Disabled)\")$2!0"
-            }
-        },*/
         {
             find: "getPlatformUserUrl:",
             replacement: {
-                match: /(?<=(?:},{|\[{)type:\i\.\w{0,8}?\..{0,20},name:")(.{0,20})"(.{0,225}?icon:\{.{0,225}?\},.{0,150}?enabled:)(?:!(\d))(?=,?)/g,
-                replace: "$1 notenabled$3\".replace(\" notenabled0\",\"\").replace(\"notenabled1\",\"(Disabled)\")$2!0"
+                match: /(let \i=)(\[.*?\])(,\i=\i.{0,40},\i=.{0,30}?;)/,
+                replace: "$1$self.changeConnections($2)$3"
             }
-        },
-    ]
+        }
+    ],
+    changeConnections(connections: Connection[]) {
+        connections
+            .filter(connection => connection.enabled == !1)
+            .forEach(connection => {
+                connection.enabled = true;
+                console.log(`Enabled connection ${connection.name}`);
+                connection.name += " (Disabled)";
+            });
+        return connections;
+    }
 });
